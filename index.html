@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animation Website</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 1rem;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: center;
+            background-color: #333;
+        }
+        nav a {
+            color: white;
+            padding: 1rem;
+            text-decoration: none;
+            text-transform: uppercase;
+        }
+        nav a:hover {
+            background-color: #575757;
+        }
+        main {
+            padding: 2rem;
+            text-align: center;
+        }
+        .tools {
+            margin: 1rem;
+            text-align: center;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            display: block;
+            margin: 1rem auto;
+        }
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        .frame-controls {
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Animation Studio</h1>
+    </header>
+
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#animate">Animate</a>
+        <a href="#contact">Contact</a>
+    </nav>
+
+    <main>
+        <section id="animate">
+            <h2>Create Your Animation</h2>
+            <div class="tools">
+                <button onclick="setTool('pen')">Pen</button>
+                <button onclick="setTool('eraser')">Eraser</button>
+                <label for="colorPicker">Color:</label>
+                <input type="color" id="colorPicker" value="#000000" onchange="setColor(this.value)">
+                <label for="lineWidth">Line Width:</label>
+                <input type="number" id="lineWidth" value="5" min="1" max="50" onchange="setLineWidth(this.value)">
+                <label for="onionSkin">Onion Skin:</label>
+                <input type="checkbox" id="onionSkin" onchange="toggleOnionSkin(this.checked)">
+            </div>
+
+            <canvas id="animationCanvas" width="600" height="400"></canvas>
+
+            <div class="frame-controls">
+                <button onclick="addFrame()">Add Frame</button>
+                <button onclick="prevFrame()">Previous Frame</button>
+                <button onclick="nextFrame()">Next Frame</button>
+                <button onclick="playAnimation()">Play Animation</button>
+                <button onclick="clearCanvas()">Clear Canvas</button>
+            </div>
+
+            <p>Frames: <span id="frameCount">0</span> | Current Frame: <span id="currentFrame">0</span></p>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 Animation Studio. All rights reserved.</p>
+    </footer>
+
+    <script>
+        const canvas = document.getElementById('animationCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false;
+        let tool = 'pen';
+        let color = '#000000';
+        let lineWidth = 5;
+        let frames = [];
+        let currentFrame = 0;
+        let onionSkinEnabled = false;
+
+        canvas.addEventListener('mousedown', () => { drawing = true; });
+        canvas.addEventListener('mouseup', () => { drawing = false; ctx.beginPath(); });
+        canvas.addEventListener('mousemove', draw);
+
+        function draw(event) {
+            if (!drawing) return;
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+
+            if (tool === 'pen') {
+                ctx.strokeStyle = color;
+                ctx.globalCompositeOperation = 'source-over';
+            } else if (tool === 'eraser') {
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.lineWidth = lineWidth * 2;
+            }
+
+            ctx.lineTo(event.offsetX, event.offsetY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(event.offsetX, event.offsetY);
+        }
+
+        function setTool(selectedTool) {
+            tool = selectedTool;
+        }
+
+        function setColor(selectedColor) {
+            color = selectedColor;
+        }
+
+        function setLineWidth(selectedLineWidth) {
+            lineWidth = selectedLineWidth;
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function addFrame() {
+            const frame = canvas.toDataURL();
+            frames[currentFrame] = frame;
+            currentFrame = frames.length;
+            frames.push(null); // Reserve space for the new frame
+            document.getElementById('frameCount').textContent = frames.length;
+            document.getElementById('currentFrame').textContent = currentFrame;
+            clearCanvas();
+        }
+
+        function prevFrame() {
+            if (currentFrame > 1) {
+                currentFrame--;
+                document.getElementById('currentFrame').textContent = currentFrame;
+                loadFrame(currentFrame);
+            }
+        }
+
+        function nextFrame() {
+            if (currentFrame < frames.length - 1) {
+                currentFrame++;
+                document.getElementById('currentFrame').textContent = currentFrame;
+                loadFrame(currentFrame);
+            }
+        }
+
+        function loadFrame(index) {
+            clearCanvas();
+            if (frames[index]) {
+                const img = new Image();
+                img.src = frames[index];
+                img.onload = () => ctx.drawImage(img, 0, 0);
+            }
+            if (onionSkinEnabled && index > 1) {
+                const onionSkinImg = new Image();
+                onionSkinImg.src = frames[index - 1];
+                onionSkinImg.onload = () => {
+                    ctx.globalAlpha = 0.5;
+                    ctx.drawImage(onionSkinImg, 0, 0);
+                    ctx.globalAlpha = 1.0;
+                };
+            }
+        }
+
+        function toggleOnionSkin(enabled) {
+            onionSkinEnabled = enabled;
+        }
+
+        function playAnimation() {
+            let frameIndex = 1;
+            const interval = setInterval(() => {
+                if (frameIndex >= frames.length) {
+                    clearInterval(interval);
+                    return;
+                }
+                loadFrame(frameIndex);
+                frameIndex++;
+            }, 500);
+        }
+    </script>
+</body>
+</html>
